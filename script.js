@@ -1,76 +1,123 @@
 //your code here
-// Constants for game configuration
-const containerSize = 400; // Size of the game container in pixels
-const pixelSize = 10; // Size of each pixel in pixels
-const numPixels = containerSize / pixelSize; // Number of pixels in each row/column
+var blockSize = 25;
+var total_row = 17; //total row number
+var total_col = 17; //total column number
+var board;
+var context;
 
-// Create the game container element
-const gameContainer = document.getElementById("gameContainer");
+var snakeX = blockSize * 5;
+var snakeY = blockSize * 5;
 
-// Set the width and height of the game container
-gameContainer.style.width = `${containerSize}px`;
-gameContainer.style.height = `${containerSize}px`;
+// Set the total number of rows and columns
+var speedX = 0; //speed of snake in x coordinate.
+var speedY = 0; //speed of snake in Y coordinate.
 
-// Generate the pixels
-for (let i = 0; i < numPixels; i++) {
-  for (let j = 0; j < numPixels; j++) {
-    const pixel = document.createElement("div");
-    pixel.className = "pixel";
-    pixel.id = `pixel${i * numPixels + j + 1}`;
-    pixel.style.width = `${pixelSize}px`;
-    pixel.style.height = `${pixelSize}px`;
-    gameContainer.appendChild(pixel);
-  }
+var snakeBody = [];
+
+var foodX;
+var foodY;
+
+var gameOver = false;
+
+window.onload = function () {
+	// Set board height and width
+	board = document.getElementById("board");
+	board.height = total_row * blockSize;
+	board.width = total_col * blockSize;
+	context = board.getContext("2d");
+
+	placeFood();
+	document.addEventListener("keyup", changeDirection); //for movements
+	// Set snake speed
+	setInterval(update, 1000 / 10);
 }
 
-// Set up the food element
-const food = document.createElement("div");
-food.className = "food";
-food.id = "foodPixel";
-food.style.width = `${pixelSize}px`;
-food.style.height = `${pixelSize}px`;
-gameContainer.appendChild(food);
+function update() {
+	if (gameOver) {
+		return;
+	}
 
-// Set up the snake body element
-const snakeBody = document.createElement("div");
-snakeBody.className = "snakeBody";
-snakeBody.id = "snakeBodyPixel";
-snakeBody.style.width = `${pixelSize}px`;
-snakeBody.style.height = `${pixelSize}px`;
-gameContainer.appendChild(snakeBody);
+	// Background of a Game
+	context.fillStyle = "green";
+	context.fillRect(0, 0, board.width, board.height);
 
-// Set up the score board element
-const scoreBoard = document.createElement("div");
-scoreBoard.className = "scoreBoard";
-gameContainer.appendChild(scoreBoard);
+	// Set food color and position
+	context.fillStyle = "yellow";
+	context.fillRect(foodX, foodY, blockSize, blockSize);
 
-// Set initial position of the snake (20th row, 1st column)
-let currentRow = 20;
-let currentCol = 1;
-const initialPixelId = `pixel${currentRow * numPixels + currentCol}`;
-const initialPixel = document.getElementById(initialPixelId);
-initialPixel.classList.add("snakeBodyPixel");
+	if (snakeX == foodX && snakeY == foodY) {
+		snakeBody.push([foodX, foodY]);
+		placeFood();
+	}
 
-// Function to move the snake automatically
-function moveSnake() {
-  // Move the snake to the next position
-  currentCol++;
+	// body of snake will grow
+	for (let i = snakeBody.length - 1; i > 0; i--) {
+		// it will store previous part of snake to the current part
+		snakeBody[i] = snakeBody[i - 1];
+	}
+	if (snakeBody.length) {
+		snakeBody[0] = [snakeX, snakeY];
+	}
 
-  // Check if the snake has reached the right edge
-  if (currentCol > numPixels) {
-    currentCol = 1;
-  }
+	context.fillStyle = "white";
+	snakeX += speedX * blockSize; //updating Snake position in X coordinate.
+	snakeY += speedY * blockSize; //updating Snake position in Y coordinate.
+	context.fillRect(snakeX, snakeY, blockSize, blockSize);
+	for (let i = 0; i < snakeBody.length; i++) {
+		context.fillRect(snakeBody[i][0], snakeBody[i][1], blockSize, blockSize);
+	}
 
-  // Remove the class from the previous pixel
-  const previousPixelId = `pixel${currentRow * numPixels + currentCol - 1}`;
-  const previousPixel = document.getElementById(previousPixelId);
-  previousPixel.classList.remove("snakeBodyPixel");
+	if (snakeX < 0
+		|| snakeX > total_col * blockSize
+		|| snakeY < 0
+		|| snakeY > total_row * blockSize) {
+		
+		// Out of bound condition
+		gameOver = true;
+		alert("Game Over");
+	}
 
-  // Add the class to the new pixel
-  const currentPixelId = `pixel${currentRow * numPixels + currentCol}`;
-  const currentPixel = document.getElementById(currentPixelId);
-  currentPixel.classList.add("snakeBodyPixel");
+	for (let i = 0; i < snakeBody.length; i++) {
+		if (snakeX == snakeBody[i][0] && snakeY == snakeBody[i][1]) {
+			
+			// Snake eats own body
+			gameOver = true;
+			alert("Game Over");
+		}
+	}
 }
 
-// Start the snake movement
-setInterval(moveSnake, 100);
+// Movement of the Snake - We are using addEventListener
+function changeDirection(e) {
+	if (e.code == "ArrowUp" && speedY != 1) {
+		// If up arrow key pressed with this condition...
+		// snake will not move in the opposite direction
+		speedX = 0;
+		speedY = -1;
+	}
+	else if (e.code == "ArrowDown" && speedY != -1) {
+		//If down arrow key pressed
+		speedX = 0;
+		speedY = 1;
+	}
+	else if (e.code == "ArrowLeft" && speedX != 1) {
+		//If left arrow key pressed
+		speedX = -1;
+		speedY = 0;
+	}
+	else if (e.code == "ArrowRight" && speedX != -1) {
+		//If Right arrow key pressed
+		speedX = 1;
+		speedY = 0;
+	}
+}
+
+// Randomly place food
+function placeFood() {
+
+	// in x coordinates.
+	foodX = Math.floor(Math.random() * total_col) * blockSize;
+	
+	//in y coordinates.
+	foodY = Math.floor(Math.random() * total_row) * blockSize;
+}
